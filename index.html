@@ -71,27 +71,36 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ3Ym9odHByd25lZ2J1bnJ4bnlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQwODY5NjYsImV4cCI6MjA3OTY2Mjk2Nn0.VRek3BsAz0DcGPJDbq3HbDYwSqh4Wj2wU7HPCLBioX4';
 
 
-  // ✅ 只创建一个 client
+
   const supabase = window.supabase.createClient(
     SUPABASE_URL,
     SUPABASE_KEY
   );
 
-  let hasValidSession = false;
+  let ready = false;
 
-  // ✅ 页面加载时立刻解析重置链接
+  // ✅ 页面加载：用 code 换 session
   window.addEventListener('load', async () => {
     const messageEl = document.getElementById('message');
 
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+
+    if (!code) {
+      messageEl.textContent = '重置链接无效，请从邮件打开';
+      messageEl.className = 'error';
+      return;
+    }
+
     try {
       const { data, error } =
-        await supabase.auth.getSessionFromUrl({ storeSession: true });
+        await supabase.auth.exchangeCodeForSession(code);
 
       if (error || !data.session) {
-        throw new Error('重置链接无效或已过期，请重新申请');
+        throw new Error('重置链接无效或已过期');
       }
 
-      hasValidSession = true;
+      ready = true;
       messageEl.textContent = '请设置新密码';
       messageEl.className = 'success';
     } catch (err) {
@@ -100,12 +109,12 @@
     }
   });
 
-  // ✅ 点击按钮只做一件事：改密码
+  // ✅ 点击按钮：只更新密码
   async function resetPassword() {
     const newPassword = document.getElementById('newPassword').value;
     const messageEl = document.getElementById('message');
 
-    if (!hasValidSession) {
+    if (!ready) {
       messageEl.textContent = '重置链接无效或已过期';
       messageEl.className = 'error';
       return;
