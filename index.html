@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>重置密码 - MoodBox</title>
+    <style>
+        body {
+          font-family: Arial, sans-serif;
+          text-align: center;
+          padding: 50px;
+          background: #F6EEE2;
+        }
+        .container {
+          background: white;
+          padding: 40px;
+          border-radius: 10px;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+          max-width: 500px;
+          margin: 0 auto;
+        }
+        h1 { color: #1F2937; }
+        label { display: block; margin-top: 20px; font-weight: bold; text-align: left; }
+        input {
+          width: 100%;
+          padding: 12px;
+          margin-top: 5px;
+          border-radius: 6px;
+          border: 1px solid #ccc;
+          font-size: 16px;
+        }
+        .button {
+          background: #F09D00;
+          color: white;
+          padding: 14px 28px;
+          text-decoration: none;
+          border-radius: 8px;
+          font-weight: bold;
+          margin-top: 30px;
+          display: inline-block;
+          cursor: pointer;
+          border: none;
+        }
+        .message {
+          margin-top: 20px;
+          font-size: 16px;
+        }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>重置密码</h1>
+    <p>请输入新密码完成密码重置</p>
+
+    <label for="newPassword">新密码</label>
+    <input type="password" id="newPassword" placeholder="输入新密码">
+
+    <button class="button" onclick="resetPassword()">提交</button>
+
+    <div class="message" id="message"></div>
+</div>
+
+<!-- 引入 Supabase JS -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+    const SUPABASE_URL = 'https://bwbohtprwnegbunrxnyj.supabase.co';
+    const SUPABASE_KEY = '你的 public anon key'; // 请替换为你的 public anon key
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function resetPassword() {
+      const newPassword = document.getElementById('newPassword').value;
+      const messageEl = document.getElementById('message');
+      messageEl.textContent = '';
+      messageEl.className = 'message';
+
+      if (!newPassword) {
+        messageEl.textContent = '请输入新密码';
+        messageEl.classList.add('error');
+        return;
+      }
+
+      try {
+        // 解析 URL 中的 access_token
+        const urlParams = new URLSearchParams(window.location.search);
+        const accessToken = urlParams.get('access_token');
+
+        if (!accessToken) {
+          throw new Error('无法获取重置令牌，请从邮件链接访问页面');
+        }
+
+        // 使用 access_token 设置新密码
+        const { data, error } = await supabase.auth.updateUser({
+          password: newPassword,
+          accessToken: accessToken
+        });
+
+        if (error) {
+          messageEl.textContent = error.message;
+          messageEl.classList.add('error');
+        } else {
+          messageEl.textContent = '密码重置成功！您现在可以登录了';
+          messageEl.classList.add('success');
+        }
+      } catch (err) {
+        messageEl.textContent = err.message;
+        messageEl.classList.add('error');
+      }
+    }
+</script>
+
+</body>
+</html>
