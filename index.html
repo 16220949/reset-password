@@ -69,17 +69,14 @@
     // 配置常量
     const SUPABASE_URL = 'https://bwbohtprwnegbunrxnyj.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ3Ym9odHByd25lZ2J1bnJ4bnlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQwODY5NjYsImV4cCI6MjA3OTY2Mjk2Nn0.VRek3BsAz0DcGPJDbq3HbDYwSqh4Wj2wU7HPCLBioX4';
-
-
-
   const supabase = window.supabase.createClient(
     SUPABASE_URL,
     SUPABASE_KEY
   );
 
-  let ready = false;
+  let canReset = false;
 
-  // ✅ 页面加载：用 code 换 session
+  // 页面加载：用 code 换 session
   window.addEventListener('load', async () => {
     const messageEl = document.getElementById('message');
 
@@ -100,8 +97,8 @@
         throw new Error('重置链接无效或已过期');
       }
 
-      ready = true;
-      messageEl.textContent = '请设置新密码';
+      canReset = true;
+      messageEl.textContent = '请输入新密码';
       messageEl.className = 'success';
     } catch (err) {
       messageEl.textContent = err.message;
@@ -109,25 +106,25 @@
     }
   });
 
-  // ✅ 点击按钮：只更新密码
+  // 点击按钮时调用
   async function resetPassword() {
-    const newPassword = document.getElementById('newPassword').value;
+    const pwd = document.getElementById('newPassword').value;
     const messageEl = document.getElementById('message');
 
-    if (!ready) {
+    if (!canReset) {
       messageEl.textContent = '重置链接无效或已过期';
       messageEl.className = 'error';
       return;
     }
 
-    if (!newPassword || newPassword.length < 8) {
-      messageEl.textContent = '密码不能少于 8 位';
+    if (!pwd || pwd.length < 8) {
+      messageEl.textContent = '密码至少 8 位';
       messageEl.className = 'error';
       return;
     }
 
     const { error } = await supabase.auth.updateUser({
-      password: newPassword
+      password: pwd
     });
 
     if (error) {
