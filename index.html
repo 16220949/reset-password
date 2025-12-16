@@ -1,96 +1,90 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>重置密码 - MoodBox</title>
-    <style>
-        body {
-          font-family: Arial, sans-serif;
-          text-align: center;
-          padding: 50px;
-          background: #F6EEE2;
-        }
-        .container {
-          background: white;
-          padding: 40px;
-          border-radius: 10px;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-          max-width: 500px;
-          margin: 0 auto;
-        }
-        h1 { color: #1F2937; }
-        label { display: block; margin-top: 20px; font-weight: bold; text-align: left; }
-        input {
-          width: 100%;
-          padding: 12px;
-          margin-top: 5px;
-          border-radius: 6px;
-          border: 1px solid #ccc;
-          font-size: 16px;
-        }
-        .button {
-          background: #F09D00;
-          color: white;
-          padding: 14px 28px;
-          text-decoration: none;
-          border-radius: 8px;
-          font-weight: bold;
-          margin-top: 30px;
-          display: inline-block;
-          cursor: pointer;
-          border: none;
-        }
-        .message {
-          margin-top: 20px;
-          font-size: 16px;
-        }
-        .error { color: red; }
-        .success { color: green; }
-    </style>
+  <meta charset="UTF-8" />
+  <title>重置密码 - MoodBox</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body {
+      background: #F6EEE2;
+      font-family: Arial;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .box {
+      background: #fff;
+      padding: 32px;
+      border-radius: 12px;
+      width: 320px;
+      text-align: center;
+    }
+    h2 { color: #F09D00; }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 12px;
+      font-size: 16px;
+    }
+    button {
+      margin-top: 16px;
+      width: 100%;
+      padding: 12px;
+      background: #F09D00;
+      border: none;
+      color: #fff;
+      font-size: 16px;
+      border-radius: 6px;
+    }
+    .msg { margin-top: 12px; }
+  </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>重置密码</h1>
-    <p>请输入新密码完成密码重置</p>
-
-    <label for="newPassword">新密码</label>
-    <input type="password" id="newPassword" placeholder="输入新密码">
-
-    <button class="button" onclick="resetPassword()">提交</button>
-
-    <div class="message" id="message"></div>
+<div class="box">
+  <h2>重置密码</h2>
+  <input id="pwd" type="password" placeholder="输入新密码（≥8位）" />
+  <button onclick="resetPwd()">确认重置</button>
+  <div class="msg" id="msg"></div>
 </div>
 
-<!-- 引入 Supabase JS -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-    // 配置常量
-    const SUPABASE_URL = 'https://bwbohtprwnegbunrxnyj.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ3Ym9odHByd25lZ2J1bnJ4bnlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQwODY5NjYsImV4cCI6MjA3OTY2Mjk2Nn0.VRek3BsAz0DcGPJDbq3HbDYwSqh4Wj2wU7HPCLBioX4';
   const supabase = window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_KEY
+    'https://bwbohtprwnegbunrxnyj.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ3Ym9odHByd25lZ2J1bnJ4bnlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQwODY5NjYsImV4cCI6MjA3OTY2Mjk2Nn0.VRek3BsAz0DcGPJDbq3HbDYwSqh4Wj2wU7HPCLBioX4'
   );
 
-  async function resetPassword() {
-    const password = document.getElementById('newPassword').value;
+  async function resetPwd() {
+    const msg = document.getElementById('msg');
+    const pwd = document.getElementById('pwd').value;
 
-    if (!password || password.length < 8) {
-      alert('密码至少 8 位');
+    if (pwd.length < 8) {
+      msg.textContent = '密码至少 8 位';
       return;
     }
 
-    // ❗关键点：什么都不要管，直接更新密码
-    const { error } = await supabase.auth.updateUser({
-      password: password
-    });
+    try {
+      // ✅ 关键步骤：用 code 换 session
+      const { data, error } =
+        await supabase.auth.exchangeCodeForSession(window.location.search);
 
-    if (error) {
-      alert('重置失败：' + error.message);
-    } else {
-      alert('密码重置成功，请返回 App 登录');
+      if (error || !data.session) {
+        throw new Error('重置链接无效或已过期');
+      }
+
+      // ✅ 已有 session，直接改密码
+      const { error: updateError } =
+        await supabase.auth.updateUser({ password: pwd });
+
+      if (updateError) throw updateError;
+
+      msg.textContent = '✅ 密码重置成功，可返回 App 登录';
+      msg.style.color = 'green';
+
+    } catch (err) {
+      msg.textContent = '❌ ' + err.message;
+      msg.style.color = 'red';
     }
   }
 </script>
