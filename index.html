@@ -67,7 +67,7 @@
     try {
       // ✅ 关键步骤：用 code 换 session
       const { data, error } =
-        await supabase.auth.exchangeCodeForSession(window.location.search);
+        await supabase.auth.exchangeCodeForSession(window.location.hrefh);
 
       if (error || !data.session) {
         throw new Error('重置链接无效或已过期');
