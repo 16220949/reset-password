@@ -79,52 +79,34 @@
         messageEl.textContent = '';
         messageEl.className = 'message';
 
-        if (!newPassword || newPassword.length < 6) {
-            messageEl.textContent = '密码不能少于6位字符';
+        if (!newPassword || newPassword.length < 8) {
+            messageEl.textContent = '密码不能少于8位字符';
             messageEl.classList.add('error');
             return;
         }
 
-        try {
-            // 1. 从URL获取一次性验证码
-            const urlParams = new URLSearchParams(window.location.search);
-            const code = urlParams.get('code');
+  async function resetPassword(newPassword) {
+    try {
+      // ✅ 这一句是关键
+      const { data: { session }, error } =
+        await supabase.auth.getSessionFromUrl({ storeSession: true });
 
-            if (!code) {
-                throw new Error('重置链接无效或已过期，请重新申请。');
-            }
+      if (error || !session) {
+        throw new Error('重置链接无效或已过期');
+      }
 
-            // 2. 使用验证码换取会话 (这是关键步骤)
-            const { data: sessionData, error: sessionError } = await client.auth.exchangeCodeForSession(code);
-            if (sessionError) throw sessionError;
+      const { error: updateError } =
+        await supabase.auth.updateUser({
+          password: newPassword
+        });
 
-            // 3. 更新用户密码 (Supabase v2 API 不需要显式传递 access_token)
-            const { data, error } = await client.auth.updateUser({
-                password: newPassword
-            });
+      if (updateError) throw updateError;
 
-            if (error) throw error;
-
-            // 4. 成功处理
-            messageEl.textContent = '🎉 密码重置成功！3秒后跳转到登录页...';
-            messageEl.classList.add('success');
-            setTimeout(() => {
-                window.location.href = 'login.html'; // 跳转到你的登录页
-            }, 3000);
-
-        } catch (err) {
-            console.error('密码重置失败:', err);
-            let userMessage = err.message;
-            // 提供更友好的错误提示
-            if (err.message.includes('invalid')) {
-                userMessage = '重置链接无效或已过期，请重新申请。';
-            } else if (err.message.includes('rate limit')) {
-                userMessage = '操作过于频繁，请稍后再试。';
-            }
-            messageEl.textContent = `重置失败: ${userMessage}`;
-            messageEl.classList.add('error');
-        }
+      alert('密码重置成功');
+    } catch (err) {
+      alert(err.message);
     }
+  }
 </script>
 
 </body>
