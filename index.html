@@ -83,19 +83,19 @@
       }
 
       try {
-        // 解析 URL 中的 access_token
-        const urlParams = new URLSearchParams(window.location.search);
-        const code = urlParams.get('code');
+const urlParams = new URLSearchParams(window.location.search);
+const code = urlParams.get('code');
 
-        if (!code) {
-          throw new Error('无法获取重置令牌，请从邮件链接访问页面');
-        }
+const { data: sessionData, error: sessionError } =
+  await supabase.auth.exchangeCodeForSession(code);
 
-        // 使用 access_token 设置新密码
-        const { data, error } = await supabase.auth.updateUser({
-          password: newPassword,
-          accessToken: code
-        });
+if (sessionError) throw sessionError;
+
+const { data, error } = await supabase.auth.updateUser({
+  password: newPassword,
+  accessToken: sessionData.session.access_token
+});
+
 
         if (error) {
           messageEl.textContent = error.message;
